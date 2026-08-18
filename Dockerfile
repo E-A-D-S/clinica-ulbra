@@ -3,9 +3,10 @@ FROM php:8.1-apache
 # dependencias do sistema + extensoes PHP necessarias (postgres, gd, zip, etc.)
 RUN apt-get update && apt-get install -y \
         libpq-dev libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev \
+        libcurl4-openssl-dev libicu-dev \
         unzip git curl \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring zip gd exif bcmath \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring zip gd exif bcmath curl intl \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
@@ -25,7 +26,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 
 # instala dependencias e compila assets
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress \
-    && npm ci && npm run build \
+    && npm install --no-audit --no-fund && npm run build \
     && chown -R www-data:www-data storage bootstrap/cache
 
 RUN chmod +x docker-entrypoint.sh
