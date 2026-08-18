@@ -49,6 +49,10 @@
         </div>
 
 
+        <div class="text-center mb-3">
+          <small class="text-black">Acesso de demonstração: <b>admin@demo.com</b> / <b>senha1234</b></small>
+        </div>
+
         <div class="text-center">
           <button type="submit" class="btn btn-dark btn-block mb-4 w-50 ">Entrar</button>
         </div>

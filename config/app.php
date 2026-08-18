@@ -31,6 +31,12 @@ return [
     'env' => env('APP_ENV', 'production'),
 
     /*
+    | Modo demonstracao: liga sozinho em producao. Bloqueia acoes de escrita
+    | (cadastrar, editar, excluir) para manter os dados de demo intactos.
+    */
+    'demo' => (bool) env('DEMO_MODE', env('APP_ENV', 'production') === 'production'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------

@@ -39,7 +39,7 @@ php artisan serve
 
 Abra http://127.0.0.1:8000.
 
-**Acesso de demonstração:** `admin@demo.com` / `senha1234`
+As credenciais de demonstração aparecem na própria tela de login.
 
 ## Segurança
 Cuidados aplicados no projeto:

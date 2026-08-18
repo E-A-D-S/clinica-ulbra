@@ -65,6 +65,10 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        if (config('app.demo')) {
+            return back()->with('paciente', 'Modo demonstracao: os cadastros nao sao salvos nesta versao publica.');
+        }
+
         // honeypot anti-spam: campo escondido que so bot preenche
         if ($request->filled('website')) {
             return back();
@@ -88,6 +92,9 @@ class UserController extends Controller
 
     public function destroy($id)
     {
+        if (config('app.demo')) {
+            return back()->with('paciente', 'Modo demonstracao: exclusoes estao desabilitadas.');
+        }
         $patient = Patient::find($id);
         if (!$patient) {
             return redirect()->route('paciente.index');
@@ -116,6 +123,9 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (config('app.demo')) {
+            return back()->with('paciente', 'Modo demonstracao: edicoes estao desabilitadas.');
+        }
         $patient = Patient::findOrFail($id);
 
         // validacao + atualizacao so dos campos previstos (sem mass assignment)
@@ -140,6 +150,10 @@ class UserController extends Controller
 
     public function permissionUpdate(Request $request, $id)
     {
+        if (config('app.demo')) {
+            return back()->with('paciente', 'Modo demonstracao: alteracoes de permissao estao desabilitadas.');
+        }
+
         // so o campo permission_id pode ser alterado, e precisa existir de verdade
         $dados = $request->validate([
             'permission_id' => 'required|integer|exists:permissions,id',
