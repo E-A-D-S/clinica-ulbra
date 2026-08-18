@@ -1,0 +1,26 @@
+# Blueprint do Render (deploy gratuito via Docker).
+# O banco fica no Neon (Postgres gratuito), informado via DATABASE_URL.
+services:
+  - type: web
+    name: clinica-ulbra
+    runtime: docker
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: APP_KEY
+        sync: false        # cole uma chave: php artisan key:generate --show
+      - key: DATABASE_URL
+        sync: false        # cole a connection string do Neon (postgres://...)
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_DRIVER
+        value: file
+      - key: MAIL_MAILER
+        value: log
+      - key: LOG_CHANNEL
+        value: stderr
