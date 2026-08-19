@@ -23,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Render (e outros proxies) terminam o HTTPS antes do app.
+        // Sem isso o Laravel gera URLs http e o login quebra.
+        if ($this->app->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
     }
 }
