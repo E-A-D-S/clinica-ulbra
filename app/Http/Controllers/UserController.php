@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\SendMail;
+use App\Mail\CadastroPaciente;
 use App\Models\model_has_permission;
+use Illuminate\Support\Facades\Log;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -45,6 +46,7 @@ class UserController extends Controller
     {
         return [
             'name'           => 'required|string|max:120',
+            'email'          => 'nullable|email|max:120',
             'birth_date'     => 'required|date',
             'marital_status' => 'nullable|string|max:40',
             'telephone'      => 'required|string|max:20',
@@ -65,18 +67,21 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        if (config('app.demo')) {
-            return back()->with('paciente', 'Modo demonstracao: os cadastros nao sao salvos nesta versao publica.');
-        }
+        // Obs.: o cadastro publico fica LIBERADO mesmo em modo demo (pra confirmar por e-mail);
+        // apenas as acoes do admin (editar/arquivar/permissao) ficam bloqueadas na demo.
 
         // honeypot anti-spam: campo escondido que so bot preenche
         if ($request->filled('website')) {
             return back();
         }
 
-        // consentimento LGPD obrigatorio
-        $request->validate(['consentimento' => 'accepted'], [
+        // consentimento LGPD + e-mail obrigatorios no cadastro publico
+        $request->validate([
+            'consentimento' => 'accepted',
+            'email'         => 'required|email|max:120',
+        ], [
             'consentimento.accepted' => 'E necessario concordar com o uso dos dados para continuar.',
+            'email.required'         => 'Informe um e-mail para receber a confirmacao do cadastro.',
         ]);
 
         // validacao server-side de todos os campos
@@ -84,15 +89,21 @@ class UserController extends Controller
 
         $patient = Patient::create($dados);
 
-        $data = [
-            'name'         => $patient->name,
-            'birth_date'   => $patient->birth_date,
-            'time_service' => $patient->time_service,
-            'consultation' => $patient->consultation,
-        ];
-        Mail::to(config('mail.from.address'))->send(new SendMail($data));
+        // e-mails: aviso ao admin/clinica + confirmacao ao paciente.
+        // Envolto em try/catch: se o envio falhar, o cadastro nao quebra nem vaza erro.
+        try {
+            Mail::to(config('mail.from.address'))
+                ->send(new CadastroPaciente($patient, 'Novo paciente cadastrado', 'emails.admin-novo'));
 
-        return redirect()->route('paciente.home')->with('paciente', 'Cadastro feito com sucesso!');
+            if ($patient->email) {
+                Mail::to($patient->email)
+                    ->send(new CadastroPaciente($patient, 'Cadastro recebido - Clinica Escola ULBRA', 'emails.confirmacao'));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Falha ao enviar e-mail de cadastro: ' . $e->getMessage());
+        }
+
+        return redirect()->route('paciente.home')->with('paciente', 'Cadastro feito com sucesso! Enviamos uma confirmacao para o seu e-mail.');
     }
 
     public function destroy($id)
@@ -184,5 +195,29 @@ class UserController extends Controller
         }
         Patient::onlyTrashed()->findOrFail($id)->restore();
         return redirect()->route('paciente.index')->with('paciente', 'Paciente restaurado com sucesso.');
+    }
+
+    // --- Historico de atendimentos ---
+    public function storeAtendimento(Request $request, $id)
+    {
+        if (config('app.demo')) {
+            return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
+        }
+        $patient = Patient::findOrFail($id);
+        $dados = $request->validate([
+            'data_hora'    => 'required|date',
+            'profissional' => 'nullable|string|max:120',
+            'anotacoes'    => 'required|string|max:5000',
+        ]);
+        $patient->atendimentos()->create($dados);
+        return redirect()->route('paciente.view', $patient->id)->with('paciente', 'Atendimento registrado no historico.');
+    }
+
+    public function historicoPdf($id)
+    {
+        $patient = Patient::withTrashed()->findOrFail($id);
+        $atendimentos = $patient->atendimentos()->get();
+        $pdf = Pdf::loadView('pdf.historico', compact('patient', 'atendimentos'));
+        return $pdf->stream('historico-' . $patient->id . '.pdf');
     }
 }

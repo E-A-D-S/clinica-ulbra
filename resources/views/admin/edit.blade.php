@@ -27,6 +27,7 @@
       <div class="field"><label>Nome completo</label><input class="input" name="name" value="{{ old('name',$patient->name) }}" required></div>
       <div class="field"><label>Data de nascimento</label><input class="input" type="date" name="birth_date" value="{{ old('birth_date',$patient->birth_date) }}" required></div>
       <div class="field"><label>Estado civil</label><input class="input" name="marital_status" value="{{ old('marital_status',$patient->marital_status) }}"></div>
+      <div class="field"><label>E-mail</label><input class="input" type="email" name="email" value="{{ old('email',$patient->email) }}"></div>
     </div>
 
     <div class="form-grid">

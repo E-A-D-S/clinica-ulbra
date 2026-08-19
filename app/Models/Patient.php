@@ -12,8 +12,13 @@ class Patient extends Model
 
     // whitelist explicita: evita mass assignment de colunas nao previstas
     protected $fillable = [
-        'name', 'birth_date', 'marital_status', 'telephone', 'rg', 'cpf',
+        'name', 'birth_date', 'marital_status', 'telephone', 'rg', 'cpf', 'email',
         'address', 'Complement', 'house_number', 'city', 'district',
         'time_service', 'consultation', 'name_father', 'address_father', 'city_father',
     ];
+
+    public function atendimentos()
+    {
+        return $this->hasMany(Atendimento::class)->orderBy('data_hora', 'desc');
+    }
 }

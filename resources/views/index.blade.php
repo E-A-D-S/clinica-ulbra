@@ -29,6 +29,10 @@
       </div>
 
       <div class="form-grid">
+        <div class="field"><label>E-mail *</label><input class="input" type="email" name="email" value="{{ old('email') }}" placeholder="voce@email.com" required></div>
+      </div>
+
+      <div class="form-grid">
         <div class="field"><label>Telefone *</label><input class="input" name="telephone" value="{{ old('telephone') }}" data-mask="(00) 00000-0000" placeholder="(00) 00000-0000" required></div>
         <div class="field"><label>RG *</label><input class="input" name="rg" value="{{ old('rg') }}" data-mask="00.000.000-0" placeholder="00.000.000-0" required></div>
         <div class="field"><label>CPF *</label><input class="input" name="cpf" value="{{ old('cpf') }}" data-mask="000.000.000-00" placeholder="000.000.000-00" required></div>
