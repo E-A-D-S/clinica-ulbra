@@ -1,34 +1,33 @@
-<x-guest-layout>
-    <x-jet-authentication-card>
-        <x-slot name="logo">
-            <x-jet-authentication-card-logo />
-        </x-slot>
+@extends('layout')
+@section('title','Recuperar senha · Clínica ULBRA')
+@section('content')
 
-        <div class="mb-4 text-sm text-gray-600">
-            {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
-        </div>
+<div class="auth-wrap">
+  <div class="card auth-card">
+    <div class="auth-head">
+      <img class="auth-logo" src="/img/ulbra.png" alt="ULBRA">
+      <h1>Recuperar senha</h1>
+      <p class="muted">Informe seu e-mail e enviaremos um link para você criar uma nova senha.</p>
+    </div>
 
-        @if (session('status'))
-            <div class="mb-4 font-medium text-sm text-green-600">
-                {{ session('status') }}
-            </div>
-        @endif
+    @if (session('status'))
+      <div class="alert alert-success">{{ session('status') }}</div>
+    @endif
+    @if ($errors->any())
+      <div class="alert alert-danger">
+        @foreach ($errors->all() as $erro)<div>{{ $erro }}</div>@endforeach
+      </div>
+    @endif
 
-        <x-jet-validation-errors class="mb-4" />
+    <form method="POST" action="{{ route('password.email') }}">
+      @csrf
+      <div class="field"><label for="email">E-mail</label>
+        <input class="input" id="email" type="email" name="email" value="{{ old('email') }}" required autofocus></div>
+      <button type="submit" class="btn btn-primary btn-block">Enviar link de recuperação</button>
+    </form>
 
-        <form method="POST" action="{{ route('password.email') }}">
-            @csrf
+    <p class="auth-alt"><a class="link" href="{{ route('login') }}">Voltar ao login</a></p>
+  </div>
+</div>
 
-            <div class="block">
-                <x-jet-label for="email" value="{{ __('Email') }}" />
-                <x-jet-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
-            </div>
-
-            <div class="flex items-center justify-end mt-4">
-                <x-jet-button>
-                    {{ __('Email Password Reset Link') }}
-                </x-jet-button>
-            </div>
-        </form>
-    </x-jet-authentication-card>
-</x-guest-layout>
+@endsection
