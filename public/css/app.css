@@ -1,0 +1,172 @@
+/* ==========================================================
+   Clínica ULBRA — design system (claro/escuro, responsivo)
+   ========================================================== */
+:root{
+  --bg:#f3f5fb;
+  --surface:#ffffff;
+  --surface-2:#eef1f8;
+  --text:#1e293b;
+  --muted:#64748b;
+  --border:#e4e8f1;
+  --primary:#4f46e5;
+  --primary-600:#4338ca;
+  --primary-soft:#eef2ff;
+  --on-primary:#ffffff;
+  --danger:#dc2626;
+  --danger-soft:#fef2f2;
+  --success:#16a34a;
+  --success-soft:#f0fdf4;
+  --warning:#d97706;
+  --radius:14px;
+  --radius-sm:10px;
+  --shadow:0 6px 24px rgba(15,23,42,.07);
+  --shadow-sm:0 2px 8px rgba(15,23,42,.06);
+  --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#0f172a;
+  --surface:#1e293b;
+  --surface-2:#243349;
+  --text:#e2e8f0;
+  --muted:#94a3b8;
+  --border:#334155;
+  --primary:#6366f1;
+  --primary-600:#818cf8;
+  --primary-soft:#1e2547;
+  --on-primary:#ffffff;
+  --danger:#f87171;
+  --danger-soft:#3b1d1d;
+  --success:#4ade80;
+  --success-soft:#14301f;
+  --shadow:0 8px 28px rgba(0,0,0,.45);
+  --shadow-sm:0 2px 10px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.55;
+  min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%}
+h1,h2,h3{line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
+.container{width:100%;max-width:1080px;margin:0 auto;padding:0 20px}
+.muted{color:var(--muted)}
+.main{flex:1;padding:34px 20px 60px}
+
+/* ---------- Topbar ---------- */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:30}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;height:66px;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);font-size:1.05rem}
+.brand:hover{text-decoration:none}
+.brand-logo{width:38px;height:38px;object-fit:contain}
+.brand b{color:var(--primary)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  font:inherit;font-weight:600;font-size:.92rem;padding:10px 18px;border-radius:999px;
+  border:1px solid transparent;transition:.18s ease;text-decoration:none;white-space:nowrap}
+.btn:hover{text-decoration:none;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--primary);color:var(--on-primary)}
+.btn-primary:hover{background:var(--primary-600)}
+.btn-ghost{background:transparent;color:var(--text);border-color:var(--border)}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{filter:brightness(.94)}
+.btn-soft{background:var(--surface-2);color:var(--text);border-color:var(--border)}
+.btn-soft:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:7px 13px;font-size:.82rem}
+.btn-block{width:100%}
+
+/* toggle de tema */
+.theme-toggle{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);
+  background:var(--surface-2);cursor:pointer;font-size:1.1rem;line-height:1;display:inline-flex;
+  align-items:center;justify-content:center;transition:.18s}
+.theme-toggle:hover{border-color:var(--primary)}
+
+/* ---------- Cards ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:26px}
+
+/* ---------- Forms ---------- */
+.field{margin-bottom:16px;display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.85rem;font-weight:600;color:var(--muted)}
+.input,textarea.input,select.input{width:100%;padding:11px 14px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;transition:.16s}
+.input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+textarea.input{min-height:90px;resize:vertical}
+.field-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.check{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted);cursor:pointer}
+.link{color:var(--primary);font-size:.9rem;font-weight:600}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+
+/* ---------- Alerts ---------- */
+.alert{padding:13px 16px;border-radius:var(--radius-sm);margin-bottom:18px;font-size:.92rem;border:1px solid transparent}
+.alert-success{background:var(--success-soft);color:var(--success);border-color:var(--success)}
+.alert-danger{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+
+/* ---------- Tabela ---------- */
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow-sm)}
+table.table{width:100%;border-collapse:collapse;min-width:640px}
+table.table th,table.table td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+table.table th{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--surface-2)}
+table.table tbody tr:last-child td{border-bottom:none}
+table.table tbody tr:hover{background:var(--surface-2)}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:600;
+  background:var(--primary-soft);color:var(--primary)}
+
+/* busca */
+.search-form{display:flex;gap:8px}
+.search-form .input{min-width:220px}
+
+/* ---------- Auth (login/cadastro) ---------- */
+.auth-wrap{min-height:calc(100vh - 200px);display:flex;align-items:center;justify-content:center;padding:20px 0}
+.auth-card{width:100%;max-width:430px}
+.auth-head{text-align:center;margin-bottom:22px}
+.auth-logo{width:64px;height:64px;object-fit:contain;margin-bottom:10px}
+.auth-head h1{font-size:1.6rem;margin:0}
+.auth-alt{text-align:center;margin:18px 0 0;font-size:.92rem;color:var(--muted)}
+.demo-hint{margin-top:20px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface-2);
+  border:1px dashed var(--border);text-align:center;font-size:.85rem;color:var(--muted)}
+.demo-hint b{color:var(--text)}
+
+/* ---------- Footer ---------- */
+.footer{border-top:1px solid var(--border);background:var(--surface);color:var(--muted);
+  font-size:.85rem;padding:20px 0}
+.footer .container{text-align:center}
+
+/* ---------- Responsivo ---------- */
+@media(max-width:640px){
+  .topbar-inner{height:58px}
+  .brand span{display:none}
+  .main{padding:22px 16px 44px}
+  .card{padding:20px}
+  .btn{padding:9px 15px}
+  .section-head{flex-direction:column;align-items:stretch}
+  .search-form{width:100%}
+  .search-form .input{flex:1;min-width:0}
+}
+
+/* ---------- Home / boas-vindas ---------- */
+.home-hero{text-align:center;padding:24px 0 22px;max-width:700px;margin:0 auto}
+.home-hero h1{font-size:clamp(1.7rem,4vw,2.4rem)}
+.home-lead{font-size:1.05rem;margin:10px 0 22px}
+.home-cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:6px 0 18px}
+.home-cards .card h3{color:var(--primary);font-size:1.15rem;margin-top:0}
+.home-cards .card p{margin:0;font-size:.95rem}
+.home-contact{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.home-contact p{margin:4px 0 0}
+@media(max-width:640px){.home-cards{grid-template-columns:1fr}}
+
+/* ---------- Formulario / ficha ---------- */
+.form-page{max-width:760px;margin:0 auto}
+.form-head{margin-bottom:18px}
+.form-head h1{margin:0 0 4px}
+.resp-details{margin-top:8px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;background:var(--surface-2)}
+.resp-details summary{cursor:pointer;font-weight:600;color:var(--muted)}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+.dt-label{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px}
+.dt-val{font-weight:600}

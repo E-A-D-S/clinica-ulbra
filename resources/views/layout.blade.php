@@ -1,18 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSS only -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
-    <!-- JavaScript Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
-    <title>@yield('title')</title>
-    @yield('scriptsjs')
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@yield('title', 'Clínica ULBRA')</title>
+  <script>try{var t=localStorage.getItem('tema');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <link rel="stylesheet" href="/css/app.css">
+  @yield('scriptsjs')
 </head>
 <body>
-@yield('content')
-<script src="js/agePermission.js"></script>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="{{ route('paciente.homeScreen') }}">
+        <img class="brand-logo" src="/img/ulbra.png" alt="ULBRA">
+        <span>Clínica <b>ULBRA</b></span>
+      </a>
+      <nav class="topbar-actions">
+        @auth
+          @can('admin')
+            <a class="btn btn-ghost btn-sm" href="{{ route('paciente.index') }}">Painel</a>
+          @endcan
+          <form action="/logout" method="post" style="display:inline">
+            @csrf
+            <button class="btn btn-ghost btn-sm" type="submit">Sair</button>
+          </form>
+        @else
+          <a class="btn btn-ghost btn-sm" href="/login">Entrar</a>
+        @endauth
+        <button class="theme-toggle" type="button" onclick="alternarTema()" aria-label="Alternar tema claro e escuro" title="Alternar tema">
+          <span class="theme-icon">🌙</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container main">
+    @if(session()->has('paciente'))
+      <div class="alert alert-success">{{ session()->get('paciente') }}</div>
+    @endif
+    @yield('content')
+  </main>
+
+  <footer class="footer">
+    <div class="container">Clínica Escola ULBRA &middot; Sistema de gestão de pacientes</div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/agePermission.js"></script>
+  @yield('scripts')
 </body>
 </html>
