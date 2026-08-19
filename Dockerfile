@@ -25,6 +25,9 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # instala dependencias e compila assets
+# garante as pastas de cache/log que o Laravel precisa antes do composer rodar
+RUN mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions storage/logs bootstrap/cache
+
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress \
     && npm install --no-audit --no-fund && npm run build \
     && chown -R www-data:www-data storage bootstrap/cache
