@@ -13,7 +13,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        // Sessoes no banco em producao: sobrevivem a reinicios do container
+        // (no plano free do Render, dormir/deploy apagaria a sessao em arquivo e deslogaria).
+        if ($this->app->environment('production')) {
+            config(['session.driver' => 'database']);
+        }
     }
 
     /**

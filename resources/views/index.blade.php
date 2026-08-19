@@ -57,6 +57,15 @@
         </div>
       </details>
 
+      <div class="lgpd-box">
+        <p class="lgpd-title">Proteção de dados (LGPD)</p>
+        <p>Os dados informados serão usados exclusivamente pela <b>Clínica Escola de Psicologia da ULBRA</b> para o agendamento e a realização do seu atendimento, ficando sob sigilo profissional. Você pode solicitar a qualquer momento a correção ou a remoção do seu cadastro da lista de atendimento. Por obrigação legal de guarda de prontuário (Resolução CFP 001/2009), o histórico clínico é mantido em arquivo, com acesso restrito.</p>
+        <label class="check">
+          <input type="checkbox" name="consentimento" value="1" required>
+          <span>Li e concordo com o uso dos meus dados conforme descrito acima.</span>
+        </label>
+      </div>
+
       <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
         <button type="submit" class="btn btn-primary">Enviar cadastro</button>
         <a href="{{ route('paciente.homeScreen') }}" class="btn btn-ghost">Voltar</a>

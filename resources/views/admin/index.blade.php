@@ -5,7 +5,7 @@
 <div class="section-head">
   <div>
     <h1>Pacientes cadastrados</h1>
-    <p class="muted">Painel administrativo &middot; <a class="link" href="{{ route('paciente.permission') }}">Permissões</a></p>
+    <p class="muted">Painel administrativo &middot; <a class="link" href="{{ route('paciente.permission') }}">Permissões</a> &middot; <a class="link" href="{{ route('paciente.arquivados') }}">Arquivados</a></p>
   </div>
   <form class="search-form" action="{{ route('paciente.index') }}" method="GET" role="search">
     <input class="input" type="search" name="search" value="{{ request('search') }}" placeholder="Buscar por nome">
@@ -39,10 +39,10 @@
             <a class="btn btn-soft btn-sm" href="{{ route('paciente.view',$p->id) }}">Ver</a>
             <a class="btn btn-soft btn-sm" href="{{ route('paciente.edit',$p->id) }}">Editar</a>
             <a class="btn btn-soft btn-sm" href="{{ route('paciente.generatePdf',$p->id) }}" target="_blank">Imprimir</a>
-            <form action="{{ route('paciente.destroy',$p->id) }}" method="post" onsubmit="return confirm('Excluir este paciente?')" style="display:inline">
+            <form action="{{ route('paciente.destroy',$p->id) }}" method="post" onsubmit="return confirm('Arquivar este paciente? O histórico continua guardado e pode ser restaurado.')" style="display:inline">
               @csrf
               @method('delete')
-              <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+              <button type="submit" class="btn btn-soft btn-sm">Arquivar</button>
             </form>
           </div>
         </td>

@@ -74,6 +74,11 @@ class UserController extends Controller
             return back();
         }
 
+        // consentimento LGPD obrigatorio
+        $request->validate(['consentimento' => 'accepted'], [
+            'consentimento.accepted' => 'E necessario concordar com o uso dos dados para continuar.',
+        ]);
+
         // validacao server-side de todos os campos
         $dados = $request->validate($this->regras());
 
@@ -93,14 +98,15 @@ class UserController extends Controller
     public function destroy($id)
     {
         if (config('app.demo')) {
-            return back()->with('paciente', 'Modo demonstracao: exclusoes estao desabilitadas.');
+            return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
         }
         $patient = Patient::find($id);
         if (!$patient) {
             return redirect()->route('paciente.index');
         }
+        // soft delete: o registro sai da lista ativa mas fica guardado (prontuario)
         $patient->delete();
-        return redirect()->route('paciente.index')->with('paciente', 'Paciente removido com sucesso!');
+        return redirect()->route('paciente.index')->with('paciente', 'Paciente arquivado. O historico continua guardado.');
     }
 
     public function edit($id)
@@ -137,7 +143,8 @@ class UserController extends Controller
 
     public function generatePdf($id)
     {
-        $data = Patient::findOrFail($id);
+        // withTrashed: permite imprimir o contrato tambem de paciente arquivado
+        $data = Patient::withTrashed()->findOrFail($id);
         $pdf = Pdf::loadView('pdf.dicePatient', compact('data'));
         return $pdf->stream('dicePatient.pdf');
     }
@@ -161,5 +168,21 @@ class UserController extends Controller
         model_has_permission::where('model_id', $id)->update(['permission_id' => $dados['permission_id']]);
 
         return redirect()->route('paciente.permission')->with('paciente', 'Permissao atualizada com sucesso!');
+    }
+
+    // Pacientes arquivados (soft-deleted). NUNCA excluimos de fato: guarda legal de prontuario.
+    public function arquivados()
+    {
+        $patient = Patient::onlyTrashed()->get();
+        return view('admin.arquivados', compact('patient'));
+    }
+
+    public function restaurar($id)
+    {
+        if (config('app.demo')) {
+            return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
+        }
+        Patient::onlyTrashed()->findOrFail($id)->restore();
+        return redirect()->route('paciente.index')->with('paciente', 'Paciente restaurado com sucesso.');
     }
 }

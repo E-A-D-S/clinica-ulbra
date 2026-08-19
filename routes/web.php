@@ -20,6 +20,8 @@ Route::post('paciente/store', [UserController::class, 'store'])->middleware('thr
 
 Route::prefix('paciente')->middleware('can:admin')->group(function () {
     Route::match(['get', 'post'], '', [UserController::class, 'index'])->name('paciente.index');
+    Route::match(['get', 'post'], '/arquivados', [UserController::class, 'arquivados'])->name('paciente.arquivados');
+    Route::put('/restaurar/{id}', [UserController::class, 'restaurar'])->name('paciente.restaurar');
     Route::match(['get', 'post'], '/permission', [UserController::class, 'permission'])->name('paciente.permission');
     Route::match(['get', 'post'], '/permission/{id}', [UserController::class, 'permissionEdit'])->name('paciente.permission.edit');
     Route::put('/permission/update/{id}', [UserController::class, 'permissionUpdate'])->name('paciente.permission.update');
@@ -33,7 +35,7 @@ Route::prefix('paciente')->middleware('can:admin')->group(function () {
 });
 
 Route::match(['get', 'post'], '/', function() {
- return redirect('/login');
+    return redirect()->route('paciente.homeScreen');
 });
 
 Route::middleware([
