@@ -231,6 +231,12 @@ class UserController extends Controller
         return Socialite::driver('google')->redirect();
     }
 
+    // e-mails autorizados como admin (staff da clinica)
+    private function adminsAutorizados()
+    {
+        return ['clinicaescolasj@gmail.com', 'eduardoeko7@gmail.com'];
+    }
+
     public function callbackGoogle()
     {
         try {
@@ -239,8 +245,11 @@ class UserController extends Controller
             return redirect('/login')->withErrors(['email' => 'Nao foi possivel entrar com o Google. Tente novamente.']);
         }
 
+        // normaliza o e-mail (minusculo + sem espacos) pra casar de forma confiavel
+        $email = strtolower(trim($googleUser->getEmail()));
+
         $user = User::firstOrCreate(
-            ['email' => $googleUser->getEmail()],
+            ['email' => $email],
             [
                 'name' => $googleUser->getName() ?: 'Usuario Google',
                 'password' => bcrypt(Str::random(40)),
@@ -249,16 +258,32 @@ class UserController extends Controller
         );
 
         // concede admin apenas a e-mails autorizados (staff da clinica)
-        $isAdmin = in_array(strtolower($user->email), ['clinicaescolasj@gmail.com', 'eduardoeko7@gmail.com']);
+        $isAdmin = in_array($email, $this->adminsAutorizados(), true);
         if ($isAdmin) {
-            Permission::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-            if (!$user->hasPermissionTo('admin')) {
-                $user->givePermissionTo('admin');
-            }
+            $perm = Permission::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+            $user->givePermissionTo($perm); // idempotente: nao duplica se ja tiver
+            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         }
 
         Auth::login($user, true);
 
         return redirect($isAdmin ? route('paciente.index') : route('paciente.homeScreen'));
+    }
+
+    // Diagnostico temporario: mostra o usuario logado e se ele e admin.
+    public function whoami()
+    {
+        if (!Auth::check()) {
+            return response()->json(['logado' => false]);
+        }
+        $u = Auth::user();
+        return response()->json([
+            'logado'       => true,
+            'email'        => $u->email,
+            'nome'         => $u->name,
+            'is_admin'     => $u->hasPermissionTo('admin'),
+            'permissoes'   => $u->getPermissionNames(),
+            'na_lista'     => in_array(strtolower(trim($u->email)), $this->adminsAutorizados(), true),
+        ]);
     }
 }
