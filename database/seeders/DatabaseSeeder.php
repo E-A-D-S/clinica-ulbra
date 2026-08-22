@@ -74,6 +74,7 @@ class DatabaseSeeder extends Seeder
                     'time_service' => 'Manha', 'consultation' => 'Consulta de rotina',
                     'house_number' => '120', 'district' => 'Centro', 'Complement' => 'Apto 2',
                     'name_father' => 'Responsavel Demo', 'address_father' => 'Rua Demo', 'city_father' => $p[7],
+                    'is_demo' => true, // ficticio: visivel para a conta de demonstracao
                 ]
             );
         }
@@ -86,6 +87,42 @@ class DatabaseSeeder extends Seeder
                     'data_hora'    => now()->subDays($a['sub'])->setTime(14, 0),
                     'profissional' => $a['prof'],
                     'anotacoes'    => $a['txt'],
+                ]);
+            }
+        }
+
+        // --- Equipe ficticia (so aparece para a conta de demonstracao) ---
+        $equipeDemo = [
+            ['email' => 'tutora.demo@exemplo.com', 'role' => 'tutor'],
+            ['email' => 'estagiaria.demo@exemplo.com', 'role' => 'estagiario'],
+        ];
+        foreach ($equipeDemo as $membro) {
+            AuthorizedUser::updateOrCreate(
+                ['email' => $membro['email']],
+                ['role' => $membro['role'], 'active' => true, 'is_demo' => true]
+            );
+        }
+
+        // --- Auditoria ficticia (so aparece para a conta de demonstracao) ---
+        if (\App\Models\AuditLog::where('is_demo', true)->count() === 0 && $ana) {
+            $logsDemo = [
+                ['email' => 'estagiaria.demo@exemplo.com', 'role' => 'estagiario', 'action' => 'paciente.cadastrar', 'desc' => 'Cadastro de paciente', 'dias' => 14],
+                ['email' => 'estagiaria.demo@exemplo.com', 'role' => 'estagiario', 'action' => 'atendimento.registrar', 'desc' => 'Atendimento registrado no historico', 'dias' => 14],
+                ['email' => 'tutora.demo@exemplo.com', 'role' => 'tutor', 'action' => 'paciente.editar', 'desc' => 'Paciente editado', 'dias' => 6],
+                ['email' => 'tutora.demo@exemplo.com', 'role' => 'tutor', 'action' => 'paciente.imprimir.historico', 'desc' => 'Impressao do historico', 'dias' => 2],
+            ];
+            foreach ($logsDemo as $l) {
+                \App\Models\AuditLog::create([
+                    'user_email'   => $l['email'],
+                    'user_role'    => $l['role'],
+                    'action'       => $l['action'],
+                    'subject_type' => 'Patient',
+                    'subject_id'   => $ana->id,
+                    'description'  => $l['desc'],
+                    'ip'           => '203.0.113.10',
+                    'is_demo'      => true,
+                    'created_at'   => now()->subDays($l['dias']),
+                    'updated_at'   => now()->subDays($l['dias']),
                 ]);
             }
         }

@@ -9,10 +9,11 @@ class AuthorizedUser extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['email', 'role', 'invited_by', 'active'];
+    protected $fillable = ['email', 'role', 'invited_by', 'active', 'is_demo'];
 
     protected $casts = [
-        'active' => 'boolean',
+        'active'  => 'boolean',
+        'is_demo' => 'boolean',
     ];
 
     // rotulos amigaveis dos papeis

@@ -11,6 +11,10 @@ class AuditLog extends Model
 
     protected $fillable = [
         'user_id', 'user_email', 'user_role',
-        'action', 'subject_type', 'subject_id', 'description', 'ip',
+        'action', 'subject_type', 'subject_id', 'description', 'ip', 'is_demo',
+    ];
+
+    protected $casts = [
+        'is_demo' => 'boolean',
     ];
 }

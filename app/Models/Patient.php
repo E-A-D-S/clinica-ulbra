@@ -15,6 +15,11 @@ class Patient extends Model
         'name', 'birth_date', 'marital_status', 'telephone', 'rg', 'cpf', 'email',
         'address', 'Complement', 'house_number', 'city', 'district',
         'time_service', 'consultation', 'name_father', 'address_father', 'city_father',
+        'is_demo',
+    ];
+
+    protected $casts = [
+        'is_demo' => 'boolean',
     ];
 
     public function atendimentos()

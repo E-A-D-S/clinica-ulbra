@@ -42,17 +42,33 @@ class UserController extends Controller
             'subject_id'   => $patient?->id,
             'description'  => $descricao,
             'ip'           => request()->ip(),
+            'is_demo'      => $this->demoBloqueado(), // acoes da conta demo ficam no sandbox
         ]);
+    }
+
+    // consulta base de pacientes: a conta demo so enxerga os ficticios
+    private function pacientesQuery(bool $comArquivados = false, bool $apenasArquivados = false)
+    {
+        $query = Patient::query();
+        if ($apenasArquivados) {
+            $query->onlyTrashed();
+        } elseif ($comArquivados) {
+            $query->withTrashed();
+        }
+        if ($this->demoBloqueado()) {
+            $query->where('is_demo', true);
+        }
+        return $query;
     }
 
     public function index()
     {
         $search = request('search');
+        $query = $this->pacientesQuery();
         if ($search) {
-            $patient = Patient::where('name', 'like', '%' . $search . '%')->get();
-        } else {
-            $patient = Patient::all();
+            $query->where('name', 'like', '%' . $search . '%');
         }
+        $patient = $query->get();
         return view('admin.index', compact('patient'));
     }
 
@@ -146,7 +162,7 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        $patient = Patient::find($id);
+        $patient = $this->pacientesQuery()->find($id);
         if (!$patient) {
             return redirect()->route('paciente.index');
         }
@@ -155,7 +171,7 @@ class UserController extends Controller
 
     public function view($id)
     {
-        $patient = Patient::find($id);
+        $patient = $this->pacientesQuery()->find($id);
         if (!$patient) {
             return redirect()->route('paciente.index');
         }
@@ -180,7 +196,7 @@ class UserController extends Controller
     public function generatePdf($id)
     {
         // withTrashed: permite imprimir o contrato tambem de paciente arquivado
-        $data = Patient::withTrashed()->findOrFail($id);
+        $data = $this->pacientesQuery(true)->findOrFail($id);
         $this->registrarAuditoria('paciente.imprimir.ficha', $data, 'Impressao da ficha/contrato');
         $pdf = Pdf::loadView('pdf.dicePatient', compact('data'));
         return $pdf->stream('dicePatient.pdf');
@@ -214,13 +230,18 @@ class UserController extends Controller
 
     public function usuarios()
     {
-        if ($this->usuarioEhDono()) {
-            $autorizados = AuthorizedUser::orderBy('role')->orderBy('email')->get();
+        if ($this->demoBloqueado()) {
+            // conta demo: so equipe ficticia, nunca a real
+            $autorizados = AuthorizedUser::where('is_demo', true)->orderBy('role')->orderBy('email')->get();
+            $ehDono = true;
+        } elseif ($this->usuarioEhDono()) {
+            $autorizados = AuthorizedUser::where('is_demo', false)->orderBy('role')->orderBy('email')->get();
+            $ehDono = true;
         } else {
             // tutor ve apenas os estagiarios que ele mesmo convidou
-            $autorizados = AuthorizedUser::where('invited_by', Auth::id())->orderBy('email')->get();
+            $autorizados = AuthorizedUser::where('is_demo', false)->where('invited_by', Auth::id())->orderBy('email')->get();
+            $ehDono = false;
         }
-        $ehDono = $this->usuarioEhDono();
         return view('admin.usuarios', compact('autorizados', 'ehDono'));
     }
 
@@ -308,13 +329,16 @@ class UserController extends Controller
 
     public function auditoria()
     {
-        if ($this->usuarioEhDono()) {
-            $logs = AuditLog::orderByDesc('created_at')->limit(300)->get();
+        if ($this->demoBloqueado()) {
+            // conta demo: so a trilha ficticia, nunca a real
+            $logs = AuditLog::where('is_demo', true)->orderByDesc('created_at')->limit(300)->get();
+        } elseif ($this->usuarioEhDono()) {
+            $logs = AuditLog::where('is_demo', false)->orderByDesc('created_at')->limit(300)->get();
         } else {
             // tutor: seus proprios registros + os dos estagiarios que convidou
             $emailsEstagiarios = AuthorizedUser::where('invited_by', Auth::id())->pluck('email')->toArray();
             $emailsEstagiarios[] = Auth::user()->email;
-            $logs = AuditLog::whereIn('user_email', $emailsEstagiarios)->orderByDesc('created_at')->limit(300)->get();
+            $logs = AuditLog::where('is_demo', false)->whereIn('user_email', $emailsEstagiarios)->orderByDesc('created_at')->limit(300)->get();
         }
         return view('admin.auditoria', compact('logs'));
     }
@@ -322,7 +346,7 @@ class UserController extends Controller
     // Pacientes arquivados (soft-deleted). NUNCA excluimos de fato: guarda legal de prontuario.
     public function arquivados()
     {
-        $patient = Patient::onlyTrashed()->get();
+        $patient = $this->pacientesQuery(false, true)->get();
         return view('admin.arquivados', compact('patient'));
     }
 
@@ -356,7 +380,7 @@ class UserController extends Controller
 
     public function historicoPdf($id)
     {
-        $patient = Patient::withTrashed()->findOrFail($id);
+        $patient = $this->pacientesQuery(true)->findOrFail($id);
         $atendimentos = $patient->atendimentos()->get();
         $this->registrarAuditoria('paciente.imprimir.historico', $patient, 'Impressao do historico');
         $pdf = Pdf::loadView('pdf.historico', compact('patient', 'atendimentos'));

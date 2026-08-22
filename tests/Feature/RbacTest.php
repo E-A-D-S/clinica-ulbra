@@ -25,14 +25,14 @@ class RbacTest extends TestCase
         return $u->fresh();
     }
 
-    private function paciente(): Patient
+    private function paciente(array $over = []): Patient
     {
-        return Patient::create([
+        return Patient::create(array_merge([
             'name' => 'Paciente Teste', 'email' => 'p@t.com', 'birth_date' => '1990-01-01',
-            'marital_status' => 'Solteiro', 'telephone' => '5199999', 'rg' => '1', 'cpf' => '1',
+            'marital_status' => 'Solteiro', 'telephone' => '5199999', 'rg' => uniqid(), 'cpf' => uniqid(),
             'address' => 'Rua', 'Complement' => 'x', 'house_number' => '1', 'city' => 'C',
             'district' => 'D', 'time_service' => 'Manha', 'consultation' => 'rotina',
-        ]);
+        ], $over));
     }
 
     public function test_visitante_sem_login_vai_para_login(): void
@@ -84,6 +84,24 @@ class RbacTest extends TestCase
 
         $this->actingAs($u)->delete('/paciente/' . $p->id)->assertRedirect();      // volta com aviso
         $this->assertDatabaseHas('patients', ['id' => $p->id, 'deleted_at' => null]); // NAO arquivou
+    }
+
+    public function test_conta_demo_so_ve_dados_ficticios(): void
+    {
+        $demo = $this->usuario('dono', 'admin@demo.com');
+        $real = $this->paciente(['name' => 'Cliente Real Sigiloso', 'is_demo' => false]);
+        $fake = $this->paciente(['name' => 'Paciente Ficticio', 'is_demo' => true]);
+
+        $resp = $this->actingAs($demo)->get('/paciente');
+        $resp->assertOk();
+        $resp->assertDontSee('Cliente Real Sigiloso'); // nao vaza cliente real
+        $resp->assertSee('Paciente Ficticio');         // ve o ficticio
+
+        // nao acessa a ficha/impressao do cliente real
+        $this->actingAs($demo)->get('/paciente/view/' . $real->id)->assertRedirect('/paciente');
+        $this->actingAs($demo)->get('/paciente/generatePdf/' . $real->id)->assertNotFound();
+        // acessa a do ficticio
+        $this->actingAs($demo)->get('/paciente/view/' . $fake->id)->assertOk();
     }
 
     public function test_tutor_so_gerencia_proprios_estagiarios(): void
