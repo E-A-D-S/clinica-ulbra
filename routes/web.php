@@ -21,8 +21,6 @@ Route::post('paciente/store', [UserController::class, 'store'])->middleware('thr
 // Login com Google (OAuth)
 Route::get('/auth/google', [UserController::class, 'redirectGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [UserController::class, 'callbackGoogle'])->name('google.callback');
-// diagnostico temporario do login/permissao
-Route::get('/auth/whoami', [UserController::class, 'whoami'])->name('auth.whoami');
 
 Route::prefix('paciente')->middleware('can:admin')->group(function () {
     Route::match(['get', 'post'], '', [UserController::class, 'index'])->name('paciente.index');

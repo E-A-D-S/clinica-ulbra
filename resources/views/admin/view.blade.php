@@ -47,7 +47,7 @@
   </div>
 @endif
 
-@if(!config('app.demo'))
+@if(optional(auth()->user())->email !== 'admin@demo.com')
 <div class="card" style="margin-bottom:18px">
   <form action="{{ route('paciente.atendimento.store',$patient->id) }}" method="post">
     @csrf

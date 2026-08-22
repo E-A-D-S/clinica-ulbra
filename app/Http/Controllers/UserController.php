@@ -69,6 +69,13 @@ class UserController extends Controller
         ];
     }
 
+    // Bloqueia escrita APENAS para a conta publica de demonstracao (admin@demo.com),
+    // para os dados de exemplo ficarem intactos. A equipe real tem acesso normal.
+    private function demoBloqueado(): bool
+    {
+        return optional(Auth::user())->email === 'admin@demo.com';
+    }
+
     public function store(Request $request)
     {
         // Obs.: o cadastro publico fica LIBERADO mesmo em modo demo (pra confirmar por e-mail);
@@ -112,7 +119,7 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        if (config('app.demo')) {
+        if ($this->demoBloqueado()) {
             return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
         }
         $patient = Patient::find($id);
@@ -144,7 +151,7 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (config('app.demo')) {
+        if ($this->demoBloqueado()) {
             return back()->with('paciente', 'Modo demonstracao: edicoes estao desabilitadas.');
         }
         $patient = Patient::findOrFail($id);
@@ -172,7 +179,7 @@ class UserController extends Controller
 
     public function permissionUpdate(Request $request, $id)
     {
-        if (config('app.demo')) {
+        if ($this->demoBloqueado()) {
             return back()->with('paciente', 'Modo demonstracao: alteracoes de permissao estao desabilitadas.');
         }
 
@@ -194,7 +201,7 @@ class UserController extends Controller
 
     public function restaurar($id)
     {
-        if (config('app.demo')) {
+        if ($this->demoBloqueado()) {
             return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
         }
         Patient::onlyTrashed()->findOrFail($id)->restore();
@@ -204,7 +211,7 @@ class UserController extends Controller
     // --- Historico de atendimentos ---
     public function storeAtendimento(Request $request, $id)
     {
-        if (config('app.demo')) {
+        if ($this->demoBloqueado()) {
             return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
         }
         $patient = Patient::findOrFail($id);
@@ -268,22 +275,5 @@ class UserController extends Controller
         Auth::login($user, true);
 
         return redirect($isAdmin ? route('paciente.index') : route('paciente.homeScreen'));
-    }
-
-    // Diagnostico temporario: mostra o usuario logado e se ele e admin.
-    public function whoami()
-    {
-        if (!Auth::check()) {
-            return response()->json(['logado' => false]);
-        }
-        $u = Auth::user();
-        return response()->json([
-            'logado'       => true,
-            'email'        => $u->email,
-            'nome'         => $u->name,
-            'is_admin'     => $u->hasPermissionTo('admin'),
-            'permissoes'   => $u->getPermissionNames(),
-            'na_lista'     => in_array(strtolower(trim($u->email)), $this->adminsAutorizados(), true),
-        ]);
     }
 }
