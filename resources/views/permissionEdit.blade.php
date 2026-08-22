@@ -1,36 +1,35 @@
 @extends('layout')
-@section('title','permission' )
+@section('title','Editar permissão · Clínica ULBRA')
 @section('content')
-<div class="nav px-5 d-flex align-items-center justify-content-between">
-  <a href="{{ route('paciente.home') }}"><img src="/img/ulbra.png" alt="" width="100" height="100"></a>
-  <a href="{{ route('paciente.index') }}" class="text-white">Voltar</a>
+
+<div class="section-head">
+  <div>
+    <h1>Editar permissão</h1>
+    <p class="muted"><a class="link" href="{{ route('paciente.permission') }}">Voltar às permissões</a></p>
+  </div>
 </div>
-@foreach($data as $data)
-<div class="text-center py-3">
-  <h1>id do usuario: {{ $data->model_id }} </h1>
-</div>
-<div class="px-5 mb-5">
-  <form action="{{route('paciente.permission.update', $data->model_id)}}"  method="post" style="display:flex; flex-direction:column;">
+
+@if ($errors->any())
+  <div class="alert alert-danger">
+    @foreach ($errors->all() as $erro)<div>{{ $erro }}</div>@endforeach
+  </div>
+@endif
+
+@foreach($data as $item)
+<div class="card" style="margin-bottom:14px">
+  <form action="{{ route('paciente.permission.update', $item->model_id) }}" method="post">
     @csrf
     @method('put')
-    <div class="d-flex">
-      <div class="mb-3 w-50">
-        <label class="form-label"> id da permission </label>
-        <input type="text" name="permission_id"  value="{{ $data->permission_id }}" class="form-control">
+    <p class="muted" style="margin-top:0">Usuário ID <b>{{ $item->model_id }}</b></p>
+    <div class="form-grid">
+      <div class="field">
+        <label>Permissão (1 = administrador, 2 = usuário comum)</label>
+        <input class="input" type="number" name="permission_id" value="{{ $item->permission_id }}" min="1" required>
       </div>
-  
-      <div class="mb-3 w-25 mx-2">
-        <label  class="form-label"> id do usuario </label>
-        <input type="text" name="model_id"   value="{{ $data->model_id }}" id="idade" class="form-control" disabled>
-      </div>
-    <button type="submit" class="btn btn-dark">Salvar</button>
-
+    </div>
+    <button type="submit" class="btn btn-primary">Salvar</button>
   </form>
 </div>
 @endforeach
-<style>
-  .nav {
-    background-color: #585dd6;
-  }
-</style>
+
 @endsection
