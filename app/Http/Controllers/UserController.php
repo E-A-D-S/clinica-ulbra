@@ -10,6 +10,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
+use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
@@ -219,5 +223,42 @@ class UserController extends Controller
         $atendimentos = $patient->atendimentos()->get();
         $pdf = Pdf::loadView('pdf.historico', compact('patient', 'atendimentos'));
         return $pdf->stream('historico-' . $patient->id . '.pdf');
+    }
+
+    // --- Login com Google (OAuth via Socialite) ---
+    public function redirectGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function callbackGoogle()
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Throwable $e) {
+            return redirect('/login')->withErrors(['email' => 'Nao foi possivel entrar com o Google. Tente novamente.']);
+        }
+
+        $user = User::firstOrCreate(
+            ['email' => $googleUser->getEmail()],
+            [
+                'name' => $googleUser->getName() ?: 'Usuario Google',
+                'password' => bcrypt(Str::random(40)),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // concede admin apenas a e-mails autorizados (staff da clinica)
+        $isAdmin = in_array(strtolower($user->email), ['clinicaescolasj@gmail.com', 'eduardoeko7@gmail.com']);
+        if ($isAdmin) {
+            Permission::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+            if (!$user->hasPermissionTo('admin')) {
+                $user->givePermissionTo('admin');
+            }
+        }
+
+        Auth::login($user, true);
+
+        return redirect($isAdmin ? route('paciente.index') : route('paciente.homeScreen'));
     }
 }

@@ -39,6 +39,11 @@
       <button type="submit" class="btn btn-primary btn-block">Entrar</button>
     </form>
 
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:.85rem">
+      <span style="flex:1;height:1px;background:var(--border)"></span>ou<span style="flex:1;height:1px;background:var(--border)"></span>
+    </div>
+    <a class="btn btn-ghost btn-block" href="{{ route('google.redirect') }}">Entrar com Google</a>
+
     <div class="demo-hint">
       <b>Acesso de demonstração</b><br>
       admin@demo.com &middot; senha1234

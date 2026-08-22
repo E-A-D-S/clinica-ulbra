@@ -18,6 +18,10 @@ Route::match(['get', 'post'], '/form', [UserController::class, 'home'])->name('p
 Route::match(['get', 'post'], '/home', [UserController::class, 'homeScreen'])->name('paciente.homeScreen');
 Route::post('paciente/store', [UserController::class, 'store'])->middleware('throttle:6,1')->name('paciente.store');
 
+// Login com Google (OAuth)
+Route::get('/auth/google', [UserController::class, 'redirectGoogle'])->name('google.redirect');
+Route::get('/auth/google/callback', [UserController::class, 'callbackGoogle'])->name('google.callback');
+
 Route::prefix('paciente')->middleware('can:admin')->group(function () {
     Route::match(['get', 'post'], '', [UserController::class, 'index'])->name('paciente.index');
     Route::match(['get', 'post'], '/arquivados', [UserController::class, 'arquivados'])->name('paciente.arquivados');
