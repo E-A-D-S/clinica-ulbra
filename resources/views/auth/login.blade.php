@@ -39,8 +39,6 @@
       <button type="submit" class="btn btn-primary btn-block">Entrar</button>
     </form>
 
-    <p class="auth-alt">Ainda não tem conta? <a class="link" href="/register">Cadastre-se aqui</a></p>
-
     <div class="demo-hint">
       <b>Acesso de demonstração</b><br>
       admin@demo.com &middot; senha1234

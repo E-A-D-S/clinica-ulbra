@@ -47,6 +47,8 @@ body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--text);lin
   min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 a{color:var(--primary);text-decoration:none}
 a:hover{text-decoration:underline}
+/* acessibilidade: foco visivel na navegacao por teclado */
+a:focus-visible,button:focus-visible,.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.theme-toggle:focus-visible,summary:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:6px}
 img{max-width:100%}
 h1,h2,h3{line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
 .container{width:100%;max-width:1080px;margin:0 auto;padding:0 20px}

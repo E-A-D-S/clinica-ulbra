@@ -132,7 +132,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration(), // desativado: sem cadastro self-service (contas criadas pelo admin ou via login Google)
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),

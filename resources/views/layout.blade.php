@@ -47,6 +47,14 @@
     <div class="container">Clínica Escola ULBRA &middot; Sistema de gestão de pacientes</div>
   </footer>
 
+  <!-- VLibras: tradutor de Libras (acessibilidade, widget oficial do governo) -->
+  <div vw class="enabled">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper><div class="vw-plugin-top-wrapper"></div></div>
+  </div>
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>new window.VLibras.Widget('https://vlibras.gov.br/app');</script>
+
   <script src="/js/app.js"></script>
   <script src="/js/agePermission.js"></script>
   @yield('scripts')
