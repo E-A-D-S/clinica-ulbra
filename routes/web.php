@@ -24,6 +24,19 @@ Route::prefix('paciente')->middleware('can:admin')->group(function () {
     Route::put('/restaurar/{id}', [UserController::class, 'restaurar'])->name('paciente.restaurar');
     Route::post('/atendimento/{id}', [UserController::class, 'storeAtendimento'])->name('paciente.atendimento.store');
     Route::match(['get', 'post'], '/historico/{id}', [UserController::class, 'historicoPdf'])->name('paciente.historico');
+
+    // ROTA TEMPORARIA de teste de e-mail (remover depois de validar o SMTP)
+    Route::get('/testmail', function () {
+        $to = request('to', config('mail.from.address'));
+        try {
+            \Illuminate\Support\Facades\Mail::raw('Teste de envio do sistema Clinica ULBRA. Se voce recebeu isto, o e-mail esta funcionando.', function ($m) use ($to) {
+                $m->to($to)->subject('Teste de e-mail - Clinica ULBRA');
+            });
+            return 'OK: e-mail de teste enviado para ' . e($to) . ' sem erro. Confira a caixa de entrada (e o spam).';
+        } catch (\Throwable $e) {
+            return 'FALHOU: ' . e($e->getMessage());
+        }
+    })->name('paciente.testmail');
     Route::match(['get', 'post'], '/permission', [UserController::class, 'permission'])->name('paciente.permission');
     Route::match(['get', 'post'], '/permission/{id}', [UserController::class, 'permissionEdit'])->name('paciente.permission.edit');
     Route::put('/permission/update/{id}', [UserController::class, 'permissionUpdate'])->name('paciente.permission.update');
