@@ -3,17 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Mail\CadastroPaciente;
-use App\Models\model_has_permission;
+use App\Models\AuditLog;
+use App\Models\AuthorizedUser;
 use Illuminate\Support\Facades\Log;
 use App\Models\Patient;
 use App\Models\User;
+use App\Support\Rbac;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -27,11 +29,20 @@ class UserController extends Controller
         return view('homeScreen');
     }
 
-    function permission()
+    // registra uma acao na trilha de auditoria
+    private function registrarAuditoria(string $action, ?Patient $patient = null, ?string $descricao = null): void
     {
-        $permission = model_has_permission::all();
-        $user = User::all();
-        return view('permission', compact('permission', 'user'));
+        $u = Auth::user();
+        AuditLog::create([
+            'user_id'      => $u?->id,
+            'user_email'   => $u?->email,
+            'user_role'    => $u ? ($u->getRoleNames()->first()) : null,
+            'action'       => $action,
+            'subject_type' => $patient ? 'Patient' : null,
+            'subject_id'   => $patient?->id,
+            'description'  => $descricao,
+            'ip'           => request()->ip(),
+        ]);
     }
 
     public function index()
@@ -99,6 +110,7 @@ class UserController extends Controller
         $dados = $request->validate($this->regras());
 
         $patient = Patient::create($dados);
+        $this->registrarAuditoria('paciente.cadastrar', $patient, 'Cadastro de paciente');
 
         // e-mails: aviso ao admin/clinica + confirmacao ao paciente.
         // Envolto em try/catch: se o envio falhar, o cadastro nao quebra nem vaza erro.
@@ -128,6 +140,7 @@ class UserController extends Controller
         }
         // soft delete: o registro sai da lista ativa mas fica guardado (prontuario)
         $patient->delete();
+        $this->registrarAuditoria('paciente.arquivar', $patient, 'Paciente arquivado');
         return redirect()->route('paciente.index')->with('paciente', 'Paciente arquivado. O historico continua guardado.');
     }
 
@@ -159,6 +172,7 @@ class UserController extends Controller
         // validacao + atualizacao so dos campos previstos (sem mass assignment)
         $dados = $request->validate($this->regras());
         $patient->update($dados);
+        $this->registrarAuditoria('paciente.editar', $patient, 'Paciente editado');
 
         return redirect()->route('paciente.index')->with('paciente', 'Paciente atualizado com sucesso!');
     }
@@ -167,29 +181,142 @@ class UserController extends Controller
     {
         // withTrashed: permite imprimir o contrato tambem de paciente arquivado
         $data = Patient::withTrashed()->findOrFail($id);
+        $this->registrarAuditoria('paciente.imprimir.ficha', $data, 'Impressao da ficha/contrato');
         $pdf = Pdf::loadView('pdf.dicePatient', compact('data'));
         return $pdf->stream('dicePatient.pdf');
     }
 
-    public function permissionEdit($id)
+    // --- Gestao de equipe (RBAC) ---
+
+    private function usuarioEhDono(): bool
     {
-        $data = model_has_permission::where('model_id', $id)->get();
-        return view('permissionEdit', compact('data'));
+        return (bool) optional(Auth::user())->hasRole('dono');
     }
 
-    public function permissionUpdate(Request $request, $id)
+    // aplica (ou remove) o papel no usuario ja existente, se houver
+    private function aplicarPapelNoUsuario(string $email, ?string $role): void
+    {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return;
+        }
+        if ($role) {
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+            $user->syncRoles([$role]);
+            if ($role === 'dono') {
+                $user->givePermissionTo('admin'); // compatibilidade
+            }
+        } else {
+            $user->syncRoles([]); // sem papel = sem acesso ao painel
+        }
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    public function usuarios()
+    {
+        if ($this->usuarioEhDono()) {
+            $autorizados = AuthorizedUser::orderBy('role')->orderBy('email')->get();
+        } else {
+            // tutor ve apenas os estagiarios que ele mesmo convidou
+            $autorizados = AuthorizedUser::where('invited_by', Auth::id())->orderBy('email')->get();
+        }
+        $ehDono = $this->usuarioEhDono();
+        return view('admin.usuarios', compact('autorizados', 'ehDono'));
+    }
+
+    public function usuariosStore(Request $request)
     {
         if ($this->demoBloqueado()) {
-            return back()->with('paciente', 'Modo demonstracao: alteracoes de permissao estao desabilitadas.');
+            return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
         }
 
-        // so o campo permission_id pode ser alterado, e precisa existir de verdade
         $dados = $request->validate([
-            'permission_id' => 'required|integer|exists:permissions,id',
+            'email' => 'required|email|max:120',
+            'role'  => 'required|in:tutor,estagiario',
+        ], [
+            'email.required' => 'Informe o e-mail da pessoa.',
+            'role.in'        => 'Papel invalido.',
         ]);
-        model_has_permission::where('model_id', $id)->update(['permission_id' => $dados['permission_id']]);
 
-        return redirect()->route('paciente.permission')->with('paciente', 'Permissao atualizada com sucesso!');
+        $email = strtolower(trim($dados['email']));
+
+        // menor privilegio: tutor so pode criar estagiario
+        $role = $this->usuarioEhDono() ? $dados['role'] : 'estagiario';
+
+        // nao permite recriar/alterar um dono principal por aqui
+        if (in_array($email, $this->adminsAutorizados(), true)) {
+            return back()->with('paciente', 'Este e-mail e um dono do sistema e nao pode ser alterado aqui.');
+        }
+
+        AuthorizedUser::updateOrCreate(
+            ['email' => $email],
+            ['role' => $role, 'active' => true, 'invited_by' => Auth::id()]
+        );
+        $this->aplicarPapelNoUsuario($email, $role);
+        $this->registrarAuditoria('usuario.autorizar', null, "Autorizou {$email} como {$role}");
+
+        return redirect()->route('paciente.usuarios')->with('paciente', 'Acesso liberado para ' . $email . ' (' . Rbac::rotulo($role) . ').');
+    }
+
+    // valida se o usuario atual pode gerenciar aquele registro
+    private function podeGerenciar(AuthorizedUser $alvo): bool
+    {
+        if (in_array($alvo->email, $this->adminsAutorizados(), true)) {
+            return false; // dono principal e protegido
+        }
+        if ($this->usuarioEhDono()) {
+            return true;
+        }
+        // tutor: so os estagiarios que ele convidou
+        return $alvo->role === 'estagiario' && (int) $alvo->invited_by === (int) Auth::id();
+    }
+
+    public function usuariosToggle($id)
+    {
+        if ($this->demoBloqueado()) {
+            return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
+        }
+        $alvo = AuthorizedUser::findOrFail($id);
+        if (!$this->podeGerenciar($alvo)) {
+            return back()->with('paciente', 'Voce nao tem permissao para alterar este acesso.');
+        }
+        $alvo->active = !$alvo->active;
+        $alvo->save();
+        // reflete no usuario: ativo recebe o papel, inativo perde o acesso
+        $this->aplicarPapelNoUsuario($alvo->email, $alvo->active ? $alvo->role : null);
+        $this->registrarAuditoria('usuario.status', null, ($alvo->active ? 'Ativou' : 'Desativou') . " o acesso de {$alvo->email}");
+
+        return back()->with('paciente', 'Acesso ' . ($alvo->active ? 'ativado' : 'desativado') . ' para ' . $alvo->email . '.');
+    }
+
+    public function usuariosDestroy($id)
+    {
+        if ($this->demoBloqueado()) {
+            return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
+        }
+        $alvo = AuthorizedUser::findOrFail($id);
+        if (!$this->podeGerenciar($alvo)) {
+            return back()->with('paciente', 'Voce nao tem permissao para remover este acesso.');
+        }
+        $email = $alvo->email;
+        $this->aplicarPapelNoUsuario($email, null); // remove o acesso do usuario
+        $alvo->delete();
+        $this->registrarAuditoria('usuario.remover', null, "Removeu o acesso de {$email}");
+
+        return back()->with('paciente', 'Acesso removido para ' . $email . '.');
+    }
+
+    public function auditoria()
+    {
+        if ($this->usuarioEhDono()) {
+            $logs = AuditLog::orderByDesc('created_at')->limit(300)->get();
+        } else {
+            // tutor: seus proprios registros + os dos estagiarios que convidou
+            $emailsEstagiarios = AuthorizedUser::where('invited_by', Auth::id())->pluck('email')->toArray();
+            $emailsEstagiarios[] = Auth::user()->email;
+            $logs = AuditLog::whereIn('user_email', $emailsEstagiarios)->orderByDesc('created_at')->limit(300)->get();
+        }
+        return view('admin.auditoria', compact('logs'));
     }
 
     // Pacientes arquivados (soft-deleted). NUNCA excluimos de fato: guarda legal de prontuario.
@@ -204,7 +331,9 @@ class UserController extends Controller
         if ($this->demoBloqueado()) {
             return back()->with('paciente', 'Modo demonstracao: acoes estao desabilitadas.');
         }
-        Patient::onlyTrashed()->findOrFail($id)->restore();
+        $patient = Patient::onlyTrashed()->findOrFail($id);
+        $patient->restore();
+        $this->registrarAuditoria('paciente.restaurar', $patient, 'Paciente restaurado');
         return redirect()->route('paciente.index')->with('paciente', 'Paciente restaurado com sucesso.');
     }
 
@@ -221,6 +350,7 @@ class UserController extends Controller
             'anotacoes'    => 'required|string|max:5000',
         ]);
         $patient->atendimentos()->create($dados);
+        $this->registrarAuditoria('atendimento.registrar', $patient, 'Atendimento registrado no historico');
         return redirect()->route('paciente.view', $patient->id)->with('paciente', 'Atendimento registrado no historico.');
     }
 
@@ -228,6 +358,7 @@ class UserController extends Controller
     {
         $patient = Patient::withTrashed()->findOrFail($id);
         $atendimentos = $patient->atendimentos()->get();
+        $this->registrarAuditoria('paciente.imprimir.historico', $patient, 'Impressao do historico');
         $pdf = Pdf::loadView('pdf.historico', compact('patient', 'atendimentos'));
         return $pdf->stream('historico-' . $patient->id . '.pdf');
     }
@@ -264,16 +395,28 @@ class UserController extends Controller
             ]
         );
 
-        // concede admin apenas a e-mails autorizados (staff da clinica)
-        $isAdmin = in_array($email, $this->adminsAutorizados(), true);
-        if ($isAdmin) {
-            $perm = Permission::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-            $user->givePermissionTo($perm); // idempotente: nao duplica se ja tiver
+        // define o papel a partir da lista de autorizados (dono/tutor/estagiario)
+        $autorizado = AuthorizedUser::where('email', $email)->where('active', true)->first();
+        $role = $autorizado->role ?? null;
+
+        // seguranca: o dono principal e sempre dono, mesmo que a tabela falhe
+        if (in_array($email, $this->adminsAutorizados(), true)) {
+            $role = 'dono';
+        }
+
+        if ($role) {
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+            $user->syncRoles([$role]);
+            if ($role === 'dono') {
+                $user->givePermissionTo('admin'); // compatibilidade
+            }
             app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        } else {
+            $user->syncRoles([]); // sem autorizacao = sem acesso ao painel
         }
 
         Auth::login($user, true);
 
-        return redirect($isAdmin ? route('paciente.index') : route('paciente.homeScreen'));
+        return redirect($role ? route('paciente.index') : route('paciente.homeScreen'));
     }
 }

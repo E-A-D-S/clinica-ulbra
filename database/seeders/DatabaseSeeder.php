@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\AuthorizedUser;
 use App\Models\Patient;
 use App\Models\User;
+use App\Support\Rbac;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,8 +16,27 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // permissao de admin
-        $adminPerm = Permission::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        // --- Papeis e permissoes (RBAC, menor privilegio) ---
+        Rbac::sincronizar();
+
+        // --- Donos autorizados (staff real) ---
+        foreach (['clinicaescolasj@gmail.com', 'eduardoeko7@gmail.com'] as $emailDono) {
+            AuthorizedUser::updateOrCreate(
+                ['email' => $emailDono],
+                ['role' => 'dono', 'active' => true]
+            );
+        }
+
+        // garante que quem ja tem conta receba o papel na hora (sem precisar relogar apos o deploy)
+        foreach (AuthorizedUser::where('active', true)->get() as $autorizado) {
+            $existente = User::where('email', $autorizado->email)->first();
+            if ($existente) {
+                $existente->syncRoles([$autorizado->role]);
+                if ($autorizado->role === 'dono') {
+                    $existente->givePermissionTo('admin');
+                }
+            }
+        }
 
         // usuario admin de demonstracao (credenciais publicas, so pra demo)
         $admin = User::firstOrCreate(
@@ -27,7 +47,10 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        $admin->givePermissionTo($adminPerm);
+        // demo enxerga tudo (papel dono), mas a escrita fica bloqueada por ser a conta publica de demo
+        $admin->syncRoles(['dono']);
+        $admin->givePermissionTo('admin');
+        AuthorizedUser::updateOrCreate(['email' => 'admin@demo.com'], ['role' => 'dono', 'active' => true]);
 
         // pacientes ficticios
         $pacientes = [

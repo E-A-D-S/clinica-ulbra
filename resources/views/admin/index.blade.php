@@ -5,7 +5,13 @@
 <div class="section-head">
   <div>
     <h1>Pacientes cadastrados</h1>
-    <p class="muted">Painel administrativo &middot; <a class="link" href="{{ route('paciente.permission') }}">Permissões</a> &middot; <a class="link" href="{{ route('paciente.arquivados') }}">Arquivados</a></p>
+    <p class="muted">
+      Painel administrativo
+      @if(auth()->user())<span class="tag">{{ \App\Support\Rbac::rotulo(auth()->user()->getRoleNames()->first()) }}</span>@endif
+      @can('pacientes.arquivar') &middot; <a class="link" href="{{ route('paciente.arquivados') }}">Arquivados</a>@endcan
+      @can('usuarios.gerenciar') &middot; <a class="link" href="{{ route('paciente.usuarios') }}">Equipe</a>@endcan
+      @can('auditoria.ver') &middot; <a class="link" href="{{ route('paciente.auditoria') }}">Auditoria</a>@endcan
+    </p>
   </div>
   <form class="search-form" action="{{ route('paciente.index') }}" method="GET" role="search">
     <input class="input" type="search" name="search" value="{{ request('search') }}" placeholder="Buscar por nome">
@@ -36,14 +42,16 @@
         <td>{{ $p->consultation }}</td>
         <td>
           <div class="row-actions">
-            <a class="btn btn-soft btn-sm" href="{{ route('paciente.view',$p->id) }}">Ver</a>
-            <a class="btn btn-soft btn-sm" href="{{ route('paciente.edit',$p->id) }}">Editar</a>
-            <a class="btn btn-soft btn-sm" href="{{ route('paciente.generatePdf',$p->id) }}" target="_blank">Imprimir</a>
+            @can('pacientes.ver')<a class="btn btn-soft btn-sm" href="{{ route('paciente.view',$p->id) }}">Ver</a>@endcan
+            @can('pacientes.editar')<a class="btn btn-soft btn-sm" href="{{ route('paciente.edit',$p->id) }}">Editar</a>@endcan
+            @can('pacientes.imprimir')<a class="btn btn-soft btn-sm" href="{{ route('paciente.generatePdf',$p->id) }}" target="_blank">Imprimir</a>@endcan
+            @can('pacientes.arquivar')
             <form action="{{ route('paciente.destroy',$p->id) }}" method="post" onsubmit="return confirm('Arquivar este paciente? O histórico continua guardado e pode ser restaurado.')" style="display:inline">
               @csrf
               @method('delete')
               <button type="submit" class="btn btn-soft btn-sm">Arquivar</button>
             </form>
+            @endcan
           </div>
         </td>
       </tr>

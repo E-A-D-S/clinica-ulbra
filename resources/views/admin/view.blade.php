@@ -8,8 +8,10 @@
     <p class="muted">Ficha do paciente</p>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    @can('pacientes.imprimir')
     <a class="btn btn-primary" href="{{ route('paciente.generatePdf',$patient->id) }}" target="_blank">Imprimir contrato</a>
     <a class="btn btn-soft" href="{{ route('paciente.historico',$patient->id) }}" target="_blank">Imprimir histórico</a>
+    @endcan
     <a class="btn btn-ghost" href="{{ route('paciente.index') }}">Voltar</a>
   </div>
 </div>
@@ -47,6 +49,7 @@
   </div>
 @endif
 
+@can('atendimentos.registrar')
 @if(optional(auth()->user())->email !== 'admin@demo.com')
 <div class="card" style="margin-bottom:18px">
   <form action="{{ route('paciente.atendimento.store',$patient->id) }}" method="post">
@@ -60,6 +63,7 @@
   </form>
 </div>
 @endif
+@endcan
 
 @if($patient->atendimentos->count() === 0)
   <div class="card"><p class="muted" style="margin:0">Nenhum atendimento registrado ainda.</p></div>

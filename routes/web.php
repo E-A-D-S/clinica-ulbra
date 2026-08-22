@@ -22,22 +22,25 @@ Route::post('paciente/store', [UserController::class, 'store'])->middleware('thr
 Route::get('/auth/google', [UserController::class, 'redirectGoogle'])->name('google.redirect');
 Route::get('/auth/google/callback', [UserController::class, 'callbackGoogle'])->name('google.callback');
 
-Route::prefix('paciente')->middleware('can:admin')->group(function () {
-    Route::match(['get', 'post'], '', [UserController::class, 'index'])->name('paciente.index');
-    Route::match(['get', 'post'], '/arquivados', [UserController::class, 'arquivados'])->name('paciente.arquivados');
-    Route::put('/restaurar/{id}', [UserController::class, 'restaurar'])->name('paciente.restaurar');
-    Route::post('/atendimento/{id}', [UserController::class, 'storeAtendimento'])->name('paciente.atendimento.store');
-    Route::match(['get', 'post'], '/historico/{id}', [UserController::class, 'historicoPdf'])->name('paciente.historico');
-    Route::match(['get', 'post'], '/permission', [UserController::class, 'permission'])->name('paciente.permission');
-    Route::match(['get', 'post'], '/permission/{id}', [UserController::class, 'permissionEdit'])->name('paciente.permission.edit');
-    Route::put('/permission/update/{id}', [UserController::class, 'permissionUpdate'])->name('paciente.permission.update');
-    Route::match(['get', 'post'], '/create', [UserController::class, 'create'])->name('paciente.create');
-    
-    Route::delete('/{id}', [UserController::class, 'destroy'])->name('paciente.destroy');
-    Route::match(['get', 'post'], '/edit/{id}', [UserController::class, 'edit'])->name('paciente.edit');
-    Route::match(['get', 'post'], '/view/{id}', [UserController::class, 'view'])->name('paciente.view');
-    Route::put('/update/{id}', [UserController::class, 'update'])->name('paciente.update');
-    Route::match(['get', 'post'], 'generatePdf/{id}', [UserController::class, 'generatePdf'])->name('paciente.generatePdf');
+Route::prefix('paciente')->middleware('auth')->group(function () {
+    Route::match(['get', 'post'], '', [UserController::class, 'index'])->middleware('can:pacientes.ver')->name('paciente.index');
+    Route::match(['get', 'post'], '/arquivados', [UserController::class, 'arquivados'])->middleware('can:pacientes.arquivar')->name('paciente.arquivados');
+    Route::put('/restaurar/{id}', [UserController::class, 'restaurar'])->middleware('can:pacientes.arquivar')->name('paciente.restaurar');
+    Route::post('/atendimento/{id}', [UserController::class, 'storeAtendimento'])->middleware('can:atendimentos.registrar')->name('paciente.atendimento.store');
+    Route::match(['get', 'post'], '/historico/{id}', [UserController::class, 'historicoPdf'])->middleware('can:pacientes.imprimir')->name('paciente.historico');
+
+    // Equipe (gestao de acessos por papel) e Auditoria
+    Route::get('/usuarios', [UserController::class, 'usuarios'])->middleware('can:usuarios.gerenciar')->name('paciente.usuarios');
+    Route::post('/usuarios', [UserController::class, 'usuariosStore'])->middleware('can:usuarios.gerenciar')->name('paciente.usuarios.store');
+    Route::put('/usuarios/{id}/status', [UserController::class, 'usuariosToggle'])->middleware('can:usuarios.gerenciar')->name('paciente.usuarios.toggle');
+    Route::delete('/usuarios/{id}', [UserController::class, 'usuariosDestroy'])->middleware('can:usuarios.gerenciar')->name('paciente.usuarios.destroy');
+    Route::get('/auditoria', [UserController::class, 'auditoria'])->middleware('can:auditoria.ver')->name('paciente.auditoria');
+
+    Route::match(['get', 'post'], '/edit/{id}', [UserController::class, 'edit'])->middleware('can:pacientes.editar')->name('paciente.edit');
+    Route::match(['get', 'post'], '/view/{id}', [UserController::class, 'view'])->middleware('can:pacientes.ver')->name('paciente.view');
+    Route::put('/update/{id}', [UserController::class, 'update'])->middleware('can:pacientes.editar')->name('paciente.update');
+    Route::match(['get', 'post'], 'generatePdf/{id}', [UserController::class, 'generatePdf'])->middleware('can:pacientes.imprimir')->name('paciente.generatePdf');
+    Route::delete('/{id}', [UserController::class, 'destroy'])->middleware('can:pacientes.arquivar')->name('paciente.destroy');
 });
 
 Route::match(['get', 'post'], '/', function() {
@@ -51,5 +54,5 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', function () {
         return redirect('/paciente');
-    })->name('dashboard')->middleware('can:admin');
+    })->name('dashboard');
 });
